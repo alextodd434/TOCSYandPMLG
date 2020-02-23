@@ -1,0 +1,113 @@
+
+spinsys {
+		channels 1H  
+		nuclei 1H 1H 1H 1H 1H 1H 1H 1H 1H 1H
+		shift 1 0.92p 0 0 0 0 0
+		shift 2 1.35p 0 0 0 0 0
+		shift 3 1.35p 0 0 0 0 0
+		shift 4 1.35p 0 0 0 0 0
+		shift 5 1.35p 0 0 0 0 0
+		shift 6 2.05p 0 0 0 0 0
+		shift 7 5.36p 0 0 0 0 0
+		shift 8 5.36p 0 0 0 0 0
+		shift 9 2.00p 0 0 0 0 0
+		shift 10 1.35p 0 0 0 0 0
+		#shift 11 2.00p 0 0 0 0 0
+		jcoupling 1 2 7.0 0 0 0 0 0
+		jcoupling 2 3 7.5 0 0 0 0 0
+		jcoupling 3 4 7.5 0 0 0 0 0
+		jcoupling 4 5 7.5 0 0 0 0 0
+    jcoupling 5 6 7.5 0 0 0 0 0
+    jcoupling 6 7 3.4 0 0 0 0 0
+    jcoupling 7 8 5.8 0 0 0 0 0
+    jcoupling 8 9 2.2 0 0 0 0 0
+		jcoupling 9 10 7.5 0 0 0 0 0
+		#jcoupling 10 11 2.2 0 0 0 0 0
+}
+
+par {
+    spin_rate        0
+    #start_operator   I1z
+
+    gamma_angles     1
+    crystal_file     alpha0beta0
+    proton_frequency 500e6
+    np               64
+    sw               6000
+    verbose          1101
+    variable rf      5700
+}
+
+proc dipsi2 {rf} {
+     
+     set rf [expr 5700]
+     set tp [expr 0.25e6/$rf]
+     
+         
+      foreach ph1 {x -x -x x} ph2 {-x x x -x} {
+	pulse [expr $tp*3.556] $rf $ph1
+	pulse [expr $tp*4.556] $rf $ph2
+	pulse [expr $tp*3.222] $rf $ph1
+	pulse [expr $tp*3.167] $rf $ph2
+	pulse [expr $tp*0.333] $rf $ph1
+	pulse [expr $tp*2.722] $rf $ph2
+	pulse [expr $tp*4.167] $rf $ph1
+	pulse [expr $tp*2.944] $rf $ph2
+	pulse [expr $tp*4.111] $rf $ph1
+     
+      }
+}
+
+proc pulseq {} {
+
+global par
+
+set n    10
+set taum 80000
+set rf   5700
+set ndipsi [expr int($taum/(115.112*(0.25e6/$rf)))]
+
+dipsi2 rf
+store 1
+prop 1 [expr $ndipsi-1]
+store 1
+
+for {set i 1} {$i <= $n} {incr i} {
+matrix set start operator I${i}z
+for {set j 1} {$j <= $i} {incr j} {
+matrix set detect operator I${j}z
+reset
+prop 1
+
+#matrix set start operator I1z
+#matrix set detect operator I2z
+#reset
+#prop 1
+
+acq
+
+}
+}
+}
+
+proc main {} {
+
+    global par
+
+    set f [fsimpson]
+    
+    set n  10
+    set ii 1
+    for {set i 1} {$i <= $n} {incr i} {
+    for {set j 1} {$j <= $i} {incr j} {
+    puts "$i -> $j : [findex $f $ii -re]"
+
+    incr ii
+   }
+   } 
+  
+
+    
+  #puts "mag: [findex $f 1 -re]"
+
+}
